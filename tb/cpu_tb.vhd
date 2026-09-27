@@ -4,47 +4,30 @@ use ieee.numeric_std.all;
 use work.ram_pkg.all;
 use std.textio.all;
 use ieee.std_logic_textio.all;
-use std.textio.all;
-use ieee.std_logic_textio.all;
 
 entity CPU_TB is
-    
+    generic (
+        ADDR_W : positive := 8;
+        DATA_W : positive range 8 to integer'high := 8
+    );
 end entity CPU_TB;
 
 architecture Behavioural of CPU_TB is
 
-component cpu_frame is
-
-
-    generic(
-
-        ADDR_W : integer := 8;
-        Data_W : integer := 8
-    );
-    port (
-        
-
-
-        CLK : in std_logic;
-        reset : in std_logic;
-        debug_RAM_contents_full: out ram_type;
-        pc_debug : out std_logic_vector(7 downto 0)
-
-
-        
-    );
-
-    end component;
-
     signal CLK : std_logic := '0';
     signal reset : std_logic := '1';
-    signal debug_RAM_contents : ram_type;
-    signal pc_debug : std_logic_vector(7 downto 0);
+    signal debug_RAM_contents : ram_type(0 to (2**ADDR_W)-1)(DATA_W-1 downto 0);
+    signal pc_debug : std_logic_vector(ADDR_W-1 downto 0);
 begin
 
     
 
     dut : entity work.cpu_frame
+
+    generic map (
+        ADDR_W => ADDR_W,
+        Data_W => DATA_W
+    )
 
     port map(
         CLK => CLK,
@@ -97,7 +80,7 @@ begin
 
     --Writing the Ram contents to a dump file
 
-    while i < 2**8 loop
+    while i < 2**ADDR_W loop
 
         line_var := null;
         write(line_var, i); --so it is in form i: value

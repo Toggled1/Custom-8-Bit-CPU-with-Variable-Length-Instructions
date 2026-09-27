@@ -8,8 +8,8 @@ entity cpu_frame is
 
     generic(
 
-        ADDR_W : integer := 8;
-        Data_W : integer := 8
+        ADDR_W : positive := 8;
+        Data_W : positive range 8 to integer'high := 8
     );
     port (
         
@@ -17,8 +17,8 @@ entity cpu_frame is
 
         CLK : in std_logic;
         reset : in std_logic;
-        debug_RAM_contents_full: out ram_type;
-        pc_debug : out std_logic_vector(7 downto 0)
+        debug_RAM_contents_full: out ram_type(0 to (2**ADDR_W)-1)(Data_W-1 downto 0);
+        pc_debug : out std_logic_vector(ADDR_W-1 downto 0)
         
     );
 
@@ -28,14 +28,13 @@ architecture behavioural of cpu_frame is
 
 
     --debug
-    signal debug_RAM_contents : ram_type;
+    signal debug_RAM_contents : ram_type(0 to (2**ADDR_W)-1)(Data_W-1 downto 0);
 
 
 
     --signal declarations are below
 
-    signal ALU_op     : std_logic_vector(3 downto 0);
-    signal ALU_result : std_logic_vector(7 downto 0);
+    signal ALU_result : std_logic_vector(Data_W-1 downto 0);
 
     signal Z : std_logic;  -- Zero
     signal C : std_logic;  -- Carry
@@ -52,13 +51,13 @@ architecture behavioural of cpu_frame is
     signal RAM_data_in: std_logic_vector(Data_W-1 downto 0);
     signal RAM_data_recieve: std_logic_vector(Data_W-1 downto 0);
 
-    signal EX_imm8 : std_logic_vector(7 downto 0); --declared eventhough its not used
+    signal EX_imm8 : std_logic_vector(Data_W-1 downto 0); --unused immediate input
 
 
     --CPU means intended for CPU, DP means intended for DP, EX means external
 
         --TO/FROM: CPU
-        signal DP_data_recieve : std_logic_vector(DATA_W-1 downto 0);
+        signal DP_data_recieve : std_logic_vector(Data_W-1 downto 0);
         
         signal DP_reg_we          : std_logic;
         signal DP_reg_read_sel   : std_logic_vector(2 downto 0);
@@ -67,28 +66,28 @@ architecture behavioural of cpu_frame is
 
         signal DP_pc_we       : std_logic;
         signal DP_pc_src_sel : std_logic;
-        signal DP_pc_target : std_logic_vector(7 downto 0);
-        signal CPU_pc_value : std_logic_vector(7 downto 0);
+        signal DP_pc_target : std_logic_vector(ADDR_W-1 downto 0);
+        signal CPU_pc_value : std_logic_vector(ADDR_W-1 downto 0);
 
 
         signal DP_ir_we       : std_logic;
-        signal CPU_ir_value      : std_logic_vector(7 downto 0);
+        signal CPU_ir_value      : std_logic_vector(Data_W-1 downto 0);
         signal DP_ir1_we       : std_logic;
-        signal CPU_ir1_value      : std_logic_vector(7 downto 0);
+        signal CPU_ir1_value      : std_logic_vector(Data_W-1 downto 0);
 
         
         signal DP_wb_sel : std_logic_vector(1 downto 0);
 
-        signal sr_in :std_logic_vector(7 downto 0);
-        signal sr_out : std_logic_vector(7 downto 0);
+        signal sr_in :std_logic_vector(Data_W-1 downto 0);
+        signal sr_out : std_logic_vector(Data_W-1 downto 0);
         signal sr_we : std_logic;
 
 
         --signal double_len : std_logic; --just an internal signal but doesn't do anything logically
         
 
-        signal op_A_FF : std_logic_vector(7 downto 0);
-        signal op_B_FF : std_logic_vector(7 downto 0);
+        signal op_A_FF : std_logic_vector(Data_W-1 downto 0);
+        signal op_B_FF : std_logic_vector(Data_W-1 downto 0);
         signal op_A_FF_en : std_logic;
         signal op_B_FF_en : std_logic;
 
@@ -98,6 +97,10 @@ begin
     pc_debug <= CPU_pc_value;
     
     ALU_cpu : entity work.ALU
+
+      generic map (
+          DATA_W => Data_W
+      )
 
      port map(
         op_A => op_A_FF,
@@ -164,7 +167,7 @@ begin
         );
 
 
-        sr_in <= Z & C & N & V & "0000"; --status register flag assignments
+        sr_in <= (Z & C & N & V) & std_logic_vector(to_unsigned(0, Data_W-4));
 
 
     process(CLK)
@@ -200,6 +203,7 @@ begin
     op_A_FF_en <= '0';
     op_B_FF_en <= '0';
     CPU_address_bus <= (others => '0');
+    RAM_data_in <= (others => '0');
     DP_ir1_we <= '0';
     DP_reg_read_sel <= (others => '0');
     DP_reg_write_sel <= (others => '0');
@@ -277,7 +281,7 @@ begin
 
         when LOADOPS =>
 
-            CPU_address_bus <= CPU_ir1_value; --ir1 is now latched so cool beans!
+            CPU_address_bus <= std_logic_vector(resize(unsigned(CPU_ir1_value), ADDR_W));
             RAM_enable <= '1';
 
             RAM_data_in <= op_A_FF;
@@ -339,7 +343,7 @@ begin
         
         when "0110" =>
             DP_pc_src_sel <= '1';
-            DP_pc_target <= op_B_FF;
+            DP_pc_target <= std_logic_vector(resize(unsigned(op_B_FF), ADDR_W));
 
 
         -- 1111 NOP
@@ -353,9 +357,9 @@ begin
 
         when "0100" =>
 
-            if sr_out(7) = '1' then
+            if sr_out(Data_W-1) = '1' then
                 DP_pc_src_sel <= '1';
-                DP_pc_target <= op_B_FF;
+                DP_pc_target <= std_logic_vector(resize(unsigned(op_B_FF), ADDR_W));
             else DP_pc_src_sel <= '0';
 
             end if;
@@ -364,9 +368,9 @@ begin
         -- 0101 BN --flag order: sr_in <= Z & C & N & V & "0000";
         
         when "0101" =>
-            if sr_out(5) = '1' then
+            if sr_out(Data_W-3) = '1' then
                 DP_pc_src_sel <= '1';
-                DP_pc_target <= op_B_FF;
+                DP_pc_target <= std_logic_vector(resize(unsigned(op_B_FF), ADDR_W));
             else
                 DP_pc_src_sel <= '0';
             end if;

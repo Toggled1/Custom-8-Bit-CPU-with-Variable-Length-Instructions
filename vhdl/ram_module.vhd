@@ -8,8 +8,8 @@ use work.ram_pkg.all;
 entity ram_block is
     
     generic(
-        address_bits : integer := 2;
-        ram_word_width : integer := 8
+        address_bits : positive := 2;
+        ram_word_width : positive := 8
 
     );
 
@@ -21,23 +21,25 @@ entity ram_block is
         address_bus : in std_logic_vector(address_bits-1 downto 0); --the address we are indexing
         data_in: in std_logic_vector(ram_word_width-1 downto 0);
         data_out: out std_logic_vector(ram_word_width-1 downto 0);
-        debug_RAM_contents: out ram_type
+        debug_RAM_contents: out ram_type(0 to (2**address_bits)-1)(ram_word_width-1 downto 0)
     );
     end entity ram_block;
 
 
 
 architecture behavioural of ram_block is
+
+    subtype ram_memory_t is ram_type(0 to (2**address_bits)-1)(ram_word_width-1 downto 0);
     --changed so it now goes 0 and up becuase was flipped in the previous version
     -- type ram_type is array (0 to (2**address_bits)-1) --2 raised to the power of the adress bits
     -- of std_logic_vector(ram_word_width-1 downto 0);
 
-    impure function ram_init(file_name : in string) return ram_type is
+    impure function ram_init(file_name : in string) return ram_memory_t is
 
         file text_file       : text open read_mode is file_name;
         variable text_line   : line;--from textio!!!
-        variable hex_val     : std_logic_vector(ram_word_width-1 downto 0);
-        variable ram_content : ram_type := (others => x"00");
+        variable hex_val     : std_logic_vector(7 downto 0);
+        variable ram_content : ram_memory_t := (others => (others => '0'));
         variable i           : integer := 0;
 
 
@@ -49,7 +51,7 @@ architecture behavioural of ram_block is
             readline(text_file, text_line); --just gets the line
             hread(text_line, hex_val); --hexadecimal read
 
-            ram_content(i) := hex_val;
+            ram_content(i) := std_logic_vector(resize(unsigned(hex_val), ram_word_width));
             i := i + 1; --increment the counter
 
         end loop;
@@ -64,7 +66,7 @@ architecture behavioural of ram_block is
 
 
     --this uses the function that i made above
-    signal ram_memory : ram_type := ram_init("Assembler/output.txt");
+    signal ram_memory : ram_memory_t := ram_init("Assembler/output.txt");
 
 
 

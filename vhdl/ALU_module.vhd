@@ -3,12 +3,15 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 entity alu is
+  generic (
+    DATA_W : positive := 8
+  );
   port(
-    op_A       : in  std_logic_vector(7 downto 0);
-    op_B       : in  std_logic_vector(7 downto 0);
+    op_A       : in  std_logic_vector(DATA_W-1 downto 0);
+    op_B       : in  std_logic_vector(DATA_W-1 downto 0);
     ALU_op     : in  std_logic_vector(3 downto 0);
 
-    ALU_result : out std_logic_vector(7 downto 0);
+    ALU_result : out std_logic_vector(DATA_W-1 downto 0);
 
     Z : out std_logic;  -- Zero
     C : out std_logic;  -- Carry
@@ -31,14 +34,14 @@ begin
 
 
     -- internal arithmetic values for computation
-    variable extended_sum    : unsigned(8 downto 0); 
-    variable result_u        : unsigned(7 downto 0); --unsigned result
+    variable extended_sum    : unsigned(DATA_W downto 0);
+    variable result_u        : unsigned(DATA_W-1 downto 0); --unsigned result
 
 
     -- signed views (using these signals for overflow detection)
-    variable a_signed        : signed(7 downto 0); --op_A signed view
-    variable b_signed        : signed(7 downto 0); --op_B signed view
-    variable result_signed   : signed(7 downto 0); --result after op signed view
+    variable a_signed        : signed(DATA_W-1 downto 0); --op_A signed view
+    variable b_signed        : signed(DATA_W-1 downto 0); --op_B signed view
+    variable result_signed   : signed(DATA_W-1 downto 0); --result after op signed view
 
 
     -- flag temporaries
@@ -92,57 +95,57 @@ begin
       -- ADD
       when "1011" =>
         extended_sum := unsigned('0' & op_A) + unsigned('0' & op_B);
-        result_u     := extended_sum(7 downto 0); --the output of ALU gets this value!!!
-        carry_flag   := extended_sum(8);
+        result_u     := extended_sum(DATA_W-1 downto 0); --the output of ALU gets this value!!!
+        carry_flag   := extended_sum(DATA_W);
 
         result_signed := signed(std_logic_vector(result_u));
 
         --flag calculations
-        if (a_signed(7) = b_signed(7)) and --equal
-           (result_signed(7) /= a_signed(7)) then --not equal !=
+          if (a_signed(DATA_W-1) = b_signed(DATA_W-1)) and --equal
+            (result_signed(DATA_W-1) /= a_signed(DATA_W-1)) then --not equal !=
           overflow_flag := '1'; --overflow happens when both operands are both positive or both negative, and the result is opposite sign
         end if;
 
       -- SUB
       when "1100" =>
         extended_sum := unsigned('0' & op_A) - unsigned('0' & op_B);
-        result_u     := extended_sum(7 downto 0);
+        result_u     := extended_sum(DATA_W-1 downto 0);
 
         --C flag 
-        carry_flag   := extended_sum(8);
+        carry_flag   := extended_sum(DATA_W);
 
         result_signed := signed(std_logic_vector(result_u));
 
         --V flag
-        if (a_signed(7) /= b_signed(7)) and
-           (result_signed(7) /= a_signed(7)) then
+          if (a_signed(DATA_W-1) /= b_signed(DATA_W-1)) and
+            (result_signed(DATA_W-1) /= a_signed(DATA_W-1)) then
           overflow_flag := '1';
         end if;
 
       -- INC
       when "1101" =>
         extended_sum := unsigned('0' & op_A) + 1;
-        result_u     := extended_sum(7 downto 0);
+        result_u     := extended_sum(DATA_W-1 downto 0);
 
         --C flag
-        carry_flag   := extended_sum(8);
+        carry_flag   := extended_sum(DATA_W);
 
         --V flag
         result_signed := signed(std_logic_vector(result_u));
-        if (a_signed(7) = '0') and (result_signed(7) = '1') then
+        if (a_signed(DATA_W-1) = '0') and (result_signed(DATA_W-1) = '1') then
           overflow_flag := '1';
         end if;
 
       -- DEC
       when "1110" =>
         extended_sum := unsigned('0' & op_A) - 1;
-        result_u     := extended_sum(7 downto 0);
-        carry_flag   := extended_sum(8); --C flag
+        result_u     := extended_sum(DATA_W-1 downto 0);
+        carry_flag   := extended_sum(DATA_W); --C flag
 
         result_signed := signed(std_logic_vector(result_u));
 
         --V flag
-        if (a_signed(7) = '1') and (result_signed(7) = '0') then
+        if (a_signed(DATA_W-1) = '1') and (result_signed(DATA_W-1) = '0') then
           overflow_flag := '1';
         end if;
 
@@ -161,7 +164,7 @@ begin
       zero_flag := '1';
     end if;
 
-    negative_flag := result_u(7);
+    negative_flag := result_u(DATA_W-1);
 
     -- drive outputs
     ALU_result <= std_logic_vector(result_u);

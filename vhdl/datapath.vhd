@@ -8,8 +8,8 @@ entity datapath is
 
     generic(
 
-        ADDR_W : integer := 8;
-        Data_W : integer := 8
+        ADDR_W : positive := 8;
+        Data_W : positive range 8 to integer'high := 8
     );
 
     port(
@@ -26,25 +26,25 @@ entity datapath is
 
         pc_we       : in std_logic;
         pc_src_sel : in std_logic;
-        pc_target : in std_logic_vector(7 downto 0);
-        pc_out : out std_logic_vector(7 downto 0);
+        pc_target : in std_logic_vector(ADDR_W-1 downto 0);
+        pc_out : out std_logic_vector(ADDR_W-1 downto 0);
 
 
         ir_we       : in std_logic;
-        ir_out      : out std_logic_vector(7 downto 0);
+        ir_out      : out std_logic_vector(Data_W-1 downto 0);
 
 
         ir1_we       : in std_logic;
-        ir1_out      : out std_logic_vector(7 downto 0);
+        ir1_out      : out std_logic_vector(Data_W-1 downto 0);
 
 
-        alu_result : in std_logic_vector(7 downto 0);
-        imm8 : in std_logic_vector(7 downto 0); --not used
+        alu_result : in std_logic_vector(Data_W-1 downto 0);
+        imm8 : in std_logic_vector(Data_W-1 downto 0); --not used
         wb_sel : in std_logic_vector(1 downto 0);
         
 
-        sr_in : in std_logic_vector(7 downto 0);
-        sr_out : out std_logic_vector(7 downto 0);
+        sr_in : in std_logic_vector(Data_W-1 downto 0);
+        sr_out : out std_logic_vector(Data_W-1 downto 0);
         sr_we : in std_logic
 
     );
@@ -55,13 +55,13 @@ architecture behavioural of datapath is
 
 --internal pc and ir/ir1 signals
 
-signal int_pc_out : std_logic_vector(DATA_W-1 downto 0);
-signal int_pc_next : std_logic_vector(DATA_W-1 downto 0);
+signal int_pc_out : std_logic_vector(ADDR_W-1 downto 0);
+signal int_pc_next : std_logic_vector(ADDR_W-1 downto 0);
 signal int_ir_out : std_logic_vector(DATA_W-1 downto 0);
 signal int_ir_next : std_logic_vector(DATA_W-1 downto 0);
 signal int_ir1_out : std_logic_vector(DATA_W-1 downto 0);
 signal int_ir1_next : std_logic_vector(DATA_W-1 downto 0);
-signal pc_plus_1    : std_logic_vector(DATA_W-1 downto 0);
+signal pc_plus_1    : std_logic_vector(ADDR_W-1 downto 0);
 
 --internal gp register i/o signals
 
@@ -99,7 +99,7 @@ PC : entity work.Dreg
 
     generic map (
 
-    cells => DATA_W
+    cells => ADDR_W
 )
 
     port map (
@@ -167,6 +167,10 @@ port map (
 
 --8 general purpose registers... selected by reg_write_sel and reg_read_sel
 gp_regs : entity work.Dregx8
+
+    generic map (
+        DATA_W => DATA_W
+    )
 
     port map(
         din          => gp_reg_din,
