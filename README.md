@@ -1,4 +1,4 @@
-# Custom 8-bit CPU (Custom Variable-Length Instruction Set)
+# 8-bit CPU (Custom Variable-Length Instruction Set)
 
 ## Project Overview
 
