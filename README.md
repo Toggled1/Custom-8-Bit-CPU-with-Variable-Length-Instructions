@@ -9,7 +9,7 @@ This is a custom 8-bit CPU I built in VHDL, along with a full toolchain (Python 
 I was introduced to RTL design in one of my courses last fall, and I got really interested in it, so I decided to start my own small project!
 
 What it supports:
-- 8-bit core with a custom 16-bit variable-length instruction set
+- 8-bit core with a custom 16-bit variable-length instruction encoding
 - Synchronous RAM (read/write, FPGA-style behavior)
 - Register-based datapath with ALU + flag logic
 - Multi-cycle FSM (fetch/decode/execute)
