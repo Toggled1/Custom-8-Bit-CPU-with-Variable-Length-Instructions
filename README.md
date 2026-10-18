@@ -10,7 +10,7 @@ I was introduced to RTL design in one of my courses last fall, and I got really 
 
 What it supports:
 - 8-bit core with a custom 16-bit variable-length instruction encoding
-- Synchronous RAM (read/write, FPGA-style behavior)
+- Synchronous RAM
 - Register-based datapath with ALU + flag logic
 - Multi-cycle FSM (fetch/decode/execute)
 - Custom Python assembler that generates machine code
